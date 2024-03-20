@@ -2,7 +2,7 @@
 
 # RootDB - installation/update script
 #
-# Copyright (C) 2024  atomicWeb
+# Copyright (C) 2024 PORQUET Sébastien
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -18,7 +18,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # AUTHORS
-# Sébastien PORQUET <sebastien.porquet@atomicweb.fr>
+# PORQUET Sébastien <sebastien.porquet@ijaz.fr>
 
 ###############################################################################################
 declare SCRIPT_PATH
