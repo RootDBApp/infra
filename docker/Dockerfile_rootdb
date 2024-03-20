@@ -1,0 +1,59 @@
+FROM atomicwebsas/rootdb-nginx-php-fpm:8.2.16
+
+ARG VERSION
+ARG UID
+ARG GID
+ARG LARAVEL_WEBSOCKETS_PORT
+ARG NGINX_USE_SSL
+ARG NGINX_FRONTED_PORT
+ARG NGINX_FRONTED_HOST
+ARG NGINX_API_PORT
+ARG NGINX_API_HOST
+ARG NGINX_SSL_CERTIFICATE
+ARG NGINX_SSL_CERTIFICATE_KEY
+ARG TIMEZONE
+
+# To get variables defined in env file in the docker-entrypoint file.
+# And not add _all_ these variable in docker-compose.yml
+ENV UID=$UID
+ENV GID=$GID
+ENV VERSION=$VERSION
+ENV LARAVEL_WEBSOCKETS_PORT=$LARAVEL_WEBSOCKETS_PORT
+ENV NGINX_USE_SSL=$NGINX_USE_SSL
+ENV NGINX_FRONTED_PORT=$NGINX_FRONTED_PORT
+ENV NGINX_FRONTED_HOST=$NGINX_FRONTED_HOST
+ENV NGINX_API_PORT=$NGINX_API_PORT
+ENV NGINX_API_HOST=$NGINX_API_HOST
+ENV NGINX_SSL_CERTIFICATE=$NGINX_SSL_CERTIFICATE
+ENV NGINX_SSL_CERTIFICATE_KEY=$NGINX_SSL_CERTIFICATE_KEY
+ENV TIMEZONE=$TIMEZONE
+
+
+RUN : "${VERSION:?argument not provided.}"
+RUN : "${UID:?argument not provided.}"
+RUN : "${GID:?argument not provided.}"
+
+
+LABEL \
+	org.opencontainers.image.authors="atomicWeb SAS" \
+	org.opencontainers.image.description="A self-hosted reporting application" \
+	org.opencontainers.image.documentation="https://documentation.rootdb.fr/" \
+	org.opencontainers.image.licenses="Propriatery" \
+	org.opencontainers.image.source="https://github.com/atomicweb-sas/rootdb/blob/main/docker/Dockerfile_rootdb" \
+	org.opencontainers.image.title="RootDB" \
+	org.opencontainers.image.url="https://www.rootdb.fr/" \
+	org.opencontainers.image.vendor="atomicWeb SAS" \
+	org.opencontainers.image.version="$VERSION"
+
+COPY rootdb/${VERSION}/api/ /var/www/api/
+COPY rootdb/${VERSION}/frontend/ /var/www/frontend/
+
+RUN ln -s /var/www/frontend/themes /var/www/api/frontend-themes \
+  && chown -R ${UID}:${GID} /var/www
+
+COPY rootdb/docker-entrypoint.sh /usr/local/bin/
+COPY rootdb/setup_rootdb.sh /usr/local/bin/
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+WORKDIR /var/www/

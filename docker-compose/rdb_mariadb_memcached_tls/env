@@ -1,0 +1,38 @@
+# Relative or full path to API / Frontend configuration file.
+API_ENV_PATHNAME=./api_env
+FRONTEND_APP_CONFIG_PATHNAME=./app-config.js
+
+LARAVEL_WEBSOCKETS_PORT=6001
+TIMEZONE=Europe/Paris
+
+# Docker UID/GID of the user which start containers.
+UID=1000
+GID=1000
+
+# Nginx with TLS
+NGINX_USE_SSL=1
+NGINX_PORT_SSL=443
+NGINX_API_HOST=api_hostname_tld
+NGINX_API_PORT=443
+NGINX_FRONTEND_HOST=front_hostname_tld
+NGINX_FRONTEND_PORT=443
+NGINX_SSL_CERTIFICATE="fullchain.pem"
+NGINX_SSL_CERTIFICATE_KEY="privkey.pem"
+NGINX_SSL_CERTS_DIR="./www/tls"
+
+# Memcached service
+MEMCACHED_HOST=rootdb-memcached
+MEMCACHED_PORT=11211
+#MEMCACHED_USER=
+#MEMCACHED_MEMUSAGE=
+#MEMCACHED_MAXCONN=
+#MEMCACHED_THREADS=
+#MEMCACHED_REQUESTS_PER_EVENT=
+
+# MariaDB service
+DB_HOST=rootdb-db-api
+DB_PORT=3306
+DB_ROOT_PASSWORD=oLoo4cee5aaYon4po6ojoophie2aiY
+DB_USER_PASSWORD=uo2Coxiek4chaib5apooqu6yei8ip1
+# Relative or full path to your database directories.
+DB_DATA_DIR=./db

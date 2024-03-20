@@ -1,0 +1,7 @@
+FROM alpine:latest
+
+COPY ./memcached/start_memcached.sh /start_memcached.sh
+RUN apk --no-cache add memcached && chmod +x /start_memcached.sh
+
+USER memcached
+CMD ["/start_memcached.sh"]

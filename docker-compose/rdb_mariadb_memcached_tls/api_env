@@ -1,0 +1,57 @@
+APP_NAME="RootDB API"
+APP_ENV=production
+APP_KEY=base64:eLjtonpxupJGlgJVQ5p6dhgGTXxDxvzfn70oY4KXppM=
+APP_DEBUG=false
+APP_URL=https://api_hostname_tld:443
+
+TIME_SERVER=fr.pool.ntp.org
+TIME_SERVER_PORT=123
+
+SESSION_DOMAIN=hostname_tld
+SANCTUM_STATEFUL_DOMAINS=hostname_tld
+
+LOG_CHANNEL=stack
+
+DB_CONNECTION=mysql
+# host = service name from docker-compose.yml
+DB_HOST=rootdb-db-api
+DB_PORT=3306
+DB_DATABASE=rootdb-api
+DB_USERNAME=rootdb_api_user
+DB_PASSWORD=uo2Coxiek4chaib5apooqu6yei8ip1
+
+SESSION_DRIVER=cookie
+SESSION_LIFETIME=120
+
+BROADCAST_DRIVER=pusher
+QUEUE_CONNECTION=sync
+
+CACHE_DRIVER=memcached
+MEMCACHED_PERSISTENT_ID=rootdb-memcached
+# host = service name from docker-compose.yml
+MEMCACHED_HOST=rootdb-memcached
+MEMCACHED_PORT=11211
+MEMCACHED_USERNAME=
+MEMCACHED_PASSWORD=
+
+PUSHER_APP_ID=rootdb-api-pusher-app-id-0911ce49ed05fca9b8581329cb3a83730922c238
+PUSHER_APP_KEY=941437ead078ff691c47862511a81fe1d494ba87
+PUSHER_APP_SECRET=b5154bb4b2013bc74e1f4f7a42ce7b414a9a1953
+PUSHER_APP_CLUSTER=rootdb-api-localhost-cluster
+PUSHER_APP_USE_TLS=true
+PUSHER_APP_SCHEME=https
+PUSHER_APP_HOST=api_hostname_tld
+PUSHER_APP_ENABLE_CLIENT_MESSAGES=false
+PUSHER_APP_ENABLE_STATISTIC=false
+PUSHER_APP_ALLOWED_ORIGINS=api_hostname_tld,front_hostname_tld,hostname_tld
+PUSHER_APP_CURLOPT_SSL_VERIFYHOST=0
+PUSHER_APP_CURLOPT_SSL_VERIFYPEER=0
+
+# Paths, inside the container.
+LARAVEL_WEBSOCKETS_SSL_LOCAL_CERT=/var/www/tls/fullchain.pem
+LARAVEL_WEBSOCKETS_SSL_LOCAL_PK=/var/www/tls/privkey.pem
+LARAVEL_WEBSOCKETS_SSL_PASSPHRASE=
+LARAVEL_WEBSOCKETS_PORT=6001
+
+MIX_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
+MIX_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
