@@ -1,0 +1,143 @@
+version: "3.8"
+services:
+  dev-rootdb-api:
+    build:
+      args:
+        user: $user
+        user_id: 1000
+        ROOTDB_RESET: ${ROOTDB_RESET:-0}
+      context: ../../../api
+      dockerfile: Dockerfile_dev
+    image: dev-rootdb-api
+    container_name: dev-rootdb-api
+    tty: true
+    restart: unless-stopped
+    working_dir: /var/www/archives/dev-git/api
+    volumes:
+      - dev_rootdb_var_www:/var/www/
+      - ../../../api/:/var/www/archives/dev-git/api
+      - ../../../frontend/public:/var/www/archives/dev-git/frontend
+      - ../../../frontend/node_modules/primereact/resources/themes/:/var/www/archives/dev-git/api/frontend-themes
+      - ../../../api/docker-entrypoint-dev.sh:/usr/local/bin/docker-entrypoint-dev.sh
+      - ./php/8.2/fpm/pool.d/www.conf:/etc/php/8.2/fpm/pool.d/www.conf
+      - ./php/8.2/fpm/php.ini:/etc/php/fpm/8.2/php.ini
+      - ./php/8.2/fpm/php-fpm.conf:/etc/php/8.2/fpm/php-fpm.conf
+      - ./php/8.2/cli/php.ini:/etc/php/cli/8.2/php.ini
+    networks:
+      dev-rootdb-network:
+        ipv4_address: 172.20.0.30
+    ports:
+      - "6001:6001"
+      #- "8092:8092"
+      - "9000:9000"
+    depends_on:
+      - dev-rootdb-db-api
+
+  dev-rootdb-nginx:
+    image: nginx:alpine
+    container_name: dev-rootdb-nginx
+    tty: true
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - dev_rootdb_var_www:/var/www/
+      - ../../../api/:/var/www/archives/dev-git/api
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      dev-rootdb-network:
+        ipv4_address: 172.20.0.40
+    extra_hosts:
+      - dev-rootdb-api.localhost.com:172.20.0.40  # for fonts downloads
+      - dev-rootdb-frontend.localhost.com:host-gateway
+    depends_on:
+      - dev-rootdb-api
+
+  dev-rootdb-memcached:
+    image: rootdbapp/rootdb-memcached:latest
+    container_name: dev-rootdb-memcached
+    tty: true
+    restart: unless-stopped
+    ports:
+      - "11211:11211"
+    networks:
+      dev-rootdb-network:
+        ipv4_address: 172.20.0.60
+
+  #dev-rootdb-redis:
+  #  image: redis:7.0-rc2-alpine
+  #  container_name: dev-rootdb-redis
+  #  tty: true
+  #  restart: unless-stopped
+  #  ports:
+  #    - "6379:6379"
+  #  networks:
+  #    dev-rootdb-network:
+  #      ipv4_address: 172.20.0.70
+
+  dev-rootdb-db-api:
+    image: mariadb:latest
+    container_name: dev-rootdb-db-api
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: rootdb-api
+      MYSQL_ROOT_PASSWORD: thee1uuWiechieneiyieZ0aif3aefe
+      MYSQL_PASSWORD: yaesheekoh5efeen2Que0gu2uupich
+      MYSQL_USER: rootdb_api_dev
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mariadb
+    volumes:
+      - ./mariadb-api/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - dev_rootdb_db_api_var_lib_mysql:/var/lib/mysql
+    networks:
+      dev-rootdb-network:
+        ipv4_address: 172.20.0.50
+
+  dev-rootdb-db-sakila:
+    image: mariadb:latest
+    container_name: dev-rootdb-db-sakila
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: sakila
+      MYSQL_ROOT_PASSWORD: thee1uuWiechieneiyieZ0aif3aefe
+      MYSQL_PASSWORD: yaesheekoh5efeen2Que0gu2uupich
+      MYSQL_USER: sakila_user
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mariadb
+    volumes:
+      - ./mariadb-sakila/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - dev_rootdb_db_sakila_var_lib_mysql:/var/lib/mysql
+    networks:
+      dev-rootdb-network:
+        ipv4_address: 172.20.0.51
+
+  #dev-rootdb-postgresql:
+  #  image: postgres:latest
+  #  container_name: dev-rootdb-postgresql
+  #  restart: unless-stopped
+  #  environment:
+  #    POSTGRES_PASSWORD: thee1uuWiechieneiyieZ0aif3aefe
+  #    POSTGRES_USER: localuser
+  #    POSTGRES_DB: dvdrental
+  #    PGDATA: /var/lib/postgre_sql
+  #    SERVICE_TAGS: dev
+  #    SERVICE_NAME: postgresql
+  #  volumes:
+  #    - dev_rootdb_db_var_lib_postgresql:/var/lib/postgre_sql
+  #  networks:
+  #    dev-rootdb-network:
+  #      ipv4_address: 172.20.0.70
+
+volumes:
+  dev_rootdb_var_www:
+  dev_rootdb_db_api_var_lib_mysql:
+  dev_rootdb_db_sakila_var_lib_mysql:
+  dev_rootdb_db_var_lib_postgresql:
+
+networks:
+  dev-rootdb-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

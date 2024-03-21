@@ -1,4 +1,4 @@
-FROM atomicwebsas/rootdb-nginx-php-fpm:8.2.16
+FROM rootdbapp/rootdb-nginx-php-fpm:8.2.17
 
 ARG VERSION
 ARG UID
@@ -35,14 +35,14 @@ RUN : "${GID:?argument not provided.}"
 
 
 LABEL \
-	org.opencontainers.image.authors="atomicWeb SAS" \
-	org.opencontainers.image.description="A self-hosted reporting application" \
+	org.opencontainers.image.authors="PORQUET Sébastien <sebastien.porquet@ijaz.fr>" \
+	org.opencontainers.image.description="An open source self-hosted reporting application" \
 	org.opencontainers.image.documentation="https://documentation.rootdb.fr/" \
-	org.opencontainers.image.licenses="Propriatery" \
-	org.opencontainers.image.source="https://github.com/atomicweb-sas/rootdb/blob/main/docker/Dockerfile_rootdb" \
+	org.opencontainers.image.licenses="GNU AFFERO GENERAL PUBLIC LICENSE Version 3" \
+	org.opencontainers.image.source="https://github.com/RootDBApp/infra/blob/main/docker/Dockerfile_rootdb" \
 	org.opencontainers.image.title="RootDB" \
 	org.opencontainers.image.url="https://www.rootdb.fr/" \
-	org.opencontainers.image.vendor="atomicWeb SAS" \
+	org.opencontainers.image.vendor="RootDB" \
 	org.opencontainers.image.version="$VERSION"
 
 COPY rootdb/${VERSION}/api/ /var/www/api/
