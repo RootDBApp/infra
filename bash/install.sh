@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-# RootDB - installation/update script
-#
-# Copyright (C) 2024 PORQUET Sébastien
+# This file is part of RootDB.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
