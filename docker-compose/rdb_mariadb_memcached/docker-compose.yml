@@ -3,7 +3,7 @@ services:
   rootdb:
     env_file:
       - env
-    image: atomicwebsas/rootdb:latest
+    image: rootdbapp/rootdb:latest
     container_name: rootdb
     restart: unless-stopped
     stdin_open: true
@@ -34,7 +34,7 @@ services:
       - rootdb-db-api
 
   rootdb-memcached:
-    image: atomicwebsas/rootdb-memcached:latest
+    image: rootdbapp/rootdb-memcached:latest
     container_name: rootdb-memcached
     tty: true
     restart: unless-stopped
