@@ -9,7 +9,7 @@ You'll find everything related to the installation of RootDB :
 * templates for services configuration like Nginx proxy, supervisor...
 
 
-# Docker
+# Development 
 ## Remove all RootDB's containers, volumes, network and unused images.
 
 ```bash
