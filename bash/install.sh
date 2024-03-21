@@ -443,7 +443,7 @@ function checkDependencies() {
 
     declare php_modules_checks_failed=false
     logInfo "Check PHP modules..." true
-    declare php_modules="bcmath curl ctype dom gd gettext iconv mbstring memcached pcntl pdo sourceguardian zip"
+    declare php_modules="bcmath curl ctype dom gd gettext iconv mbstring memcached pcntl pdo zip"
 
     for php_module_looped in ${php_modules}; do
       if [[ -z $(php -r "echo extension_loaded('${php_module_looped}') ? 'ok' : 'ko';" | grep 'ok') ]]; then
