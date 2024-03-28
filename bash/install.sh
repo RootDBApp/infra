@@ -34,34 +34,12 @@ popd || exit >/dev/null
 ###############################################################################################
 
 # Script options.
-declare env_file="${SCRIPT_PATH}/env"
 declare error=false
 declare ignore_software_dependencies=false
 declare rdb_asked_version # User defined, or fetched online.
+declare data_dir="/var/www/rootdb"
 
 declare log_file="${SCRIPT_PATH}/log"
-
-# Variables from env file.
-declare version
-declare data_dir
-declare session_domain
-declare scheme
-declare front_host
-declare api_host
-declare api_memcached_host
-declare api_memcached_port
-declare api_db_host
-declare api_db_port
-declare api_db_root_password
-declare api_db_user_password
-declare api_db_limit_to_ip
-declare nginx_user
-declare nginx_group
-declare pusher_app_key
-declare websockets_port
-declare websockets_ssl_local_cert
-declare websockets_ssl_local_pk
-declare websockets_ssl_passphrase
 
 declare rdb_online_archive_url="https://builds.rootdb.fr/rootdb"
 declare rdb_online_latest_version_url="${rdb_online_archive_url}/latest"
@@ -76,17 +54,29 @@ declare rdb_version_dir              # <rdb_archives_dir>/<x.y.z>
 declare api_dir
 declare front_dir
 declare api_frontend_themes_dir  # <rdb_version_dir>/api/frontend-themes
-declare api_env_file             # <rdb_version_dir>/api/env
+declare api_env_file             # <rdb_version_dir>/api/.env
 declare front_app_config_js_file # <rdb_version_dir>/frontend/public/app-config.js
 
 # Main configuration file user can tune.
-declare root_api_env_file             # /<data_dir>/api_config
-declare root_front_app_config_js_file # /<data_dir>/frontend_config
+declare root_api_env_file="${SCRIPT_PATH}/api_env"
+declare root_front_app_config_js_file="${SCRIPT_PATH}/app-config.js"
 
 # To know if RootDB is installed and configured.
-declare api_init_file
-declare front_init_file
 declare rdb_init_file
+
+# Only used when we bootstrap RootDB
+declare api_db_root_password
+
+# Environments variables
+declare api_memcached_host
+declare api_memcached_port
+declare api_db_host
+declare api_db_port
+declare api_db_username
+declare api_db_user_password
+declare api_db_limit_to_ip
+declare nginx_user
+declare nginx_group
 
 #
 # Log functions
@@ -107,6 +97,9 @@ declare txtyellow="\\033[1;33m"
 #     * false: Add the carriage return at the end of the string.
 # Outputs:
 #   Writes the message, preceded by "log"
+# Globals:
+#   txtyellow
+#   txtnormal
 #######################################
 function logInfo() {
 
@@ -123,6 +116,9 @@ function logInfo() {
 # Append [ OK ] to the end of current line
 # Outputs:
 #   Writes "[ OK ]"
+# Globals:
+#   txtgreen
+#   txtnormal
 #######################################
 function logInfoAddOK() {
 
@@ -135,6 +131,9 @@ function logInfoAddOK() {
 #   None
 # Outputs:
 #   Writes "[ Fail ]"
+# Globals:
+#   txtred
+#   txtnormal
 #######################################
 function logInfoAddFail() {
 
@@ -147,6 +146,9 @@ function logInfoAddFail() {
 #   Message to display.
 # Outputs:
 #   Writes the error message, preceded by "error"
+# Globals:
+#   txtred
+#   txtnormal
 #######################################
 function logError() {
 
@@ -159,6 +161,9 @@ function logError() {
 #   Message to display.
 # Outputs:
 #   Writes the message, preceded by "log"
+# Globals:
+#   txtblue
+#   txtnormal
 #######################################
 function logQuestion() {
 
@@ -193,10 +198,18 @@ function getGroup() {
 #
 # Pre-installation functions
 #
+
 #######################################
 # Display the welcome message
 # Outputs:
 #   Writes the welcome message
+# Globals:
+#   txtyellow
+#   txtred
+#   textgreen
+#   txtnormal
+# Arguments:
+#   None
 #######################################
 function welcome() {
 
@@ -208,7 +221,7 @@ function welcome() {
   echo
   echo -e "This script will install or update RootDB code with, by default, the latest version available."
   echo
-  echo -e "${txtred}This script does not handle the configuration of these services${txtnormal}"
+  echo -e "${txtred}This script does not handle the configuration of these services below :${txtnormal}"
   echo -e "* nginx      : https://documentation.rootdb.fr/install/install_without_docker.html#nginx"
   echo -e "* memcached"
   echo -e "* php-fpm    : https://documentation.rootdb.fr/install/install_without_docker.html#php-fpm"
@@ -216,16 +229,18 @@ function welcome() {
   echo -e "* supervisor : https://documentation.rootdb.fr/install/install_without_docker.html#supervisor"
   echo
   echo
-  echo -e "${txtgreen}Steps${txtnormal}"
+  echo -e "${txtgreen}Steps executed by this script${txtnormal}"
   echo -e "\t1 - check if software dependencies & PHP modules are available."
-  echo -e "\t2 - check directories, certificates files (if you want to use TSL), memcached, mariadb connexion are OK."
+  echo -e "\t2 - check directories, supervisor configuration, memcached, mariadb connexion are OK."
   echo -e "\t3 - download RootDB code from git repositories."
-  echo -e "\t4 - setup the API and frontend environments if RootDB is not yet installed."
+  echo -e "\t4 - link the API and frontend environments files."
   echo -e "\t5 - bootstrap RootDB."
   echo
-  echo -e "${txtgreen}Note${txtnormal}"
+  echo -e "${txtgreen}Notes${txtnormal}"
   echo -e "\tUse argument ${txtyellow}-v${txtnormal} to display all available options."
-  echo
+  echo -e "\tBefore running this script you should update your ${txtyellow}environments${txtnormal} files :"
+  echo -e "\t- ${txtyellow}api_env${txtnormal} - API configuration"
+  echo -e "\t- ${txtyellow}app-config.js${txtnormal} - Frontend configuration"
   echo
 }
 
@@ -246,14 +261,17 @@ function isRootUser() {
 }
 
 #######################################
-# Ask the user if he setup his "env" file correctly.
+# Ask the user if he setup his environment files correctly.
 # If not, stop the execution of the script.
+# Globals:
+#   txtyellow
+#   txtnormal
 # Arguments:
 #   None
 #######################################
-function warningEnvFile() {
+function warningEnvFiles() {
 
-  logQuestion "Did you think to create and configure your ${txtyellow}env${txtnormal} file ? [Y/n]"
+  logQuestion "Did you think to configure your ${txtyellow}environment${txtnormal} files ? [Y/n]"
   read -r env_ok
   echo
   [[ -z "${env_ok}" ]] && env_ok="y"
@@ -268,19 +286,22 @@ function warningEnvFile() {
 #######################################
 # Check if the env file is available. If not, stop the script execution.
 # Globals:
-#   env_file
+#   root_api_env_file
+#   root_api_env_file
 # Arguments:
 #   None
 #######################################
-function checkEnvFile() {
+function checkEnvFiles() {
 
-  if [[ ! -f "${env_file}" ]]; then
-    logError "env file \"${env_file}\" does not exists."
-    logError "you need to provide a env file with \"-e\" option"
-    logInfo "get a default one here : https://document.rootdb.fr/.env"
+  if [[ ! -f "${root_api_env_file}" ]]; then
+    logError "env file \"${root_api_env_file}\" does not exists."
     exit 1
   fi
 
+  if [[ ! -f "${root_api_env_file}" ]]; then
+    logError "env file \"${root_front_app_config_js_file}\" does not exists."
+    exit 1
+  fi
 }
 
 #######################################
@@ -289,24 +310,16 @@ function checkEnvFile() {
 #   env_file
 #   version
 #   data_dir
-#   scheme
-#   front_host
-#   api_host
-#   session_domain
 #   api_memcached_host
 #   api_memcached_port
 #   api_db_host
 #   api_db_port
 #   api_db_root_password
 #   api_db_user_password
+#   api_db_username
 #   api_db_limit_to_ip
 #   nginx_user
 #   nginx_group
-#   pusher_app_key
-#   websockets_port
-#   websockets_ssl_local_cert
-#   websockets_ssl_local_pk
-#   websockets_ssl_passphrase
 #   rdb_archives_dir
 #   api_dir
 #   front_dir
@@ -324,64 +337,28 @@ function checkEnvFile() {
 #######################################
 function setEnvVariables() {
 
-  logInfo "Check ${env_file} contents..."
-  version=$(grep "^VERSION" "${env_file}" | sed "s/VERSION=//")
-  data_dir=$(grep "^DATA_DIR" "${env_file}" | sed "s/DATA_DIR=//")
-  scheme=$(grep "^SCHEME" "${env_file}" | sed "s/SCHEME=//")
-  front_host=$(grep "^FRONT_HOST" "${env_file}" | sed "s/FRONT_HOST=//")
-  api_host=$(grep "^API_HOST" "${env_file}" | sed "s/API_HOST=//")
-  session_domain=$(awk -F/ '{n=split($3, a, "."); printf("%s.%s", a[n-1], a[n])}' <<<"${scheme}://$front_host")
-  api_memcached_host=$(grep "^API_MEMCACHED_HOST" "${env_file}" | sed "s/API_MEMCACHED_HOST=//")
-  api_memcached_port=$(grep "^API_MEMCACHED_PORT" "${env_file}" | sed "s/API_MEMCACHED_PORT=//")
-  api_db_host=$(grep "^API_DB_HOST" "${env_file}" | sed "s/API_DB_HOST=//")
-  api_db_port=$(grep "^API_DB_PORT" "${env_file}" | sed "s/API_DB_PORT=//")
-  api_db_root_password=$(grep "^API_DB_ROOT_PASSWORD" "${env_file}" | sed "s/API_DB_ROOT_PASSWORD=//")
-  api_db_user_password=$(grep "^API_DB_USER_PASSWORD" "${env_file}" | sed "s/API_DB_USER_PASSWORD=//")
-  api_db_limit_to_ip=$(grep "^API_DB_LIMIT_TO_IP" "${env_file}" | sed "s/API_DB_LIMIT_TO_IP=//")
-  nginx_user=$(grep "^NGINX_USER" "${env_file}" | sed "s/NGINX_USER=//")
-  nginx_group=$(grep "^NGINX_GROUP" "${env_file}" | sed "s/NGINX_GROUP=//")
-  pusher_app_key=$(grep "^PUSHER_APP_KEY" "${env_file}" | sed "s/PUSHER_APP_KEY=//")
-  #websockets_port=$(grep "WEBSOCKETS_PORT" "${env_file}" | sed "s/WEBSOCKETS_PORT=//")
-  websockets_port=6001
+  logInfo "Get some info from environment & system files..."
+  api_memcached_host=$(grep "^MEMCACHED_HOST" "${root_api_env_file}" | sed "s/MEMCACHED_HOST=//")
+  api_memcached_port=$(grep "^MEMCACHED_PORT" "${root_api_env_file}" | sed "s/MEMCACHED_PORT=//")
+  api_db_host=$(grep "^DB_HOST" "${root_api_env_file}" | sed "s/DB_HOST=//")
+  api_db_port=$(grep "^DB_PORT" "${root_api_env_file}" | sed "s/DB_PORT=//")
+  api_db_username=$(grep "^DB_USERNAME" "${root_api_env_file}" | sed "s/DB_USERNAME=//")
+  api_db_user_password=$(grep "^DB_PASSWORD" "${root_api_env_file}" | sed "s/DB_PASSWORD=//")
+  api_db_limit_to_ip=$(grep "^DB_LIMIT_TO_IP" "${root_api_env_file}" | sed "s/DB_LIMIT_TO_IP=//")
+  nginx_user=$(grep '^user' /etc/nginx/nginx.conf | sed "s/user \(.*\);/\1/")
+  nginx_group=$(grep '^user' /etc/nginx/nginx.conf | sed "s/user \(.*\);/\1/")
 
-  websockets_ssl_local_cert=$(grep "WEBSOCKETS_SSL_LOCAL_CERT" "${env_file}" | sed "s/WEBSOCKETS_SSL_LOCAL_CERT=//")
-  websockets_ssl_local_pk=$(grep "WEBSOCKETS_SSL_LOCAL_PK" "${env_file}" | sed "s/WEBSOCKETS_SSL_LOCAL_PK=//")
-  websockets_ssl_passphrase=$(grep "WEBSOCKETS_SSL_PASSPHRASE" "${env_file}" | sed "s/WEBSOCKETS_SSL_PASSPHRASE=//")
-
-  if [[ -z "${rdb_asked_version}" && "${version}" != "latest" ]]; then
-
-    rdb_asked_version="${version}"
-  fi
-
-  if [[ -n "${rdb_asked_version}" ]]; then
-    version="${rdb_asked_version}"
-  fi
-
-  logInfo "Extracted from the ${env_file} file :"
+  logInfo "Summary :"
   logInfo
-  logInfo "version                   : ${version}"
   logInfo "data dir                  : ${data_dir}"
-  logInfo "scheme                    : ${scheme}"
-  logInfo "api host                  : ${api_host}"
-  logInfo "front host                : ${front_host}"
-  logInfo "session domain            : ${session_domain}"
   logInfo "api_memcached_host        : ${api_memcached_host}"
   logInfo "api_memcached_port        : ${api_memcached_port}"
   logInfo "api db host               : ${api_db_host}"
   logInfo "api db port               : ${api_db_port}"
-  logInfo "api db root password      : ****"
   logInfo "api db user password      : ****"
   logInfo "api db limit to ip        : ${api_db_limit_to_ip}"
   logInfo "nginx user                : ${nginx_user}"
   logInfo "nginx group               : ${nginx_group}"
-  logInfo "pusher app key            : ${pusher_app_key}"
-  logInfo "websockets port           : ${websockets_port}"
-
-  if [[ "$scheme" == "https" ]]; then
-    logInfo "websockets ssl local_cert : ${websockets_ssl_local_cert}"
-    logInfo "websockets ssl local pk   : ${websockets_ssl_local_pk}"
-    logInfo "websockets ssl passphrase : ${websockets_ssl_passphrase}"
-  fi
 
   rdb_archives_dir="${data_dir}/archives"
 
@@ -391,11 +368,6 @@ function setEnvVariables() {
   api_env_file="${api_dir}/.env"
   front_app_config_js_file="${front_dir}/app-config.js"
 
-  root_api_env_file="${data_dir}/api_config"
-  root_front_app_config_js_file="${data_dir}/front_config.js"
-
-  api_init_file="${data_dir}/.api_initialized"
-  front_init_file="${data_dir}/.front_initialized"
   rdb_init_file="${data_dir}/.rdb_initialized"
 
   echo
@@ -465,6 +437,7 @@ function checkDependencies() {
 # Check if the installation directory exists and display a warning if not exists.
 # Globals:
 #   error
+#   data_dir
 # Arguments:
 #   None
 #######################################
@@ -483,6 +456,7 @@ function checkInstallDirectory() {
 #######################################
 # Check if we have write access to installation directory and display a warning if not.
 # Globals:
+#   data_dir
 #   error
 # Arguments:
 #   None
@@ -502,11 +476,17 @@ function checkDirectoriesPermissions() {
 #######################################
 # Check MariaDB connexion with the root db user. If we cannot connect, display a warning.
 # Globals:
+#   api_db_root_password
+#   api_db_host
 #   error
 # Arguments:
 #   None
 #######################################
 function checkMariadbConnexion() {
+
+  logQuestion "What is the MariaDB root password (used for initial database seeding only) ? " true
+  read -r api_db_root_password
+  echo
 
   logInfo "Check mariadb connexion..." true
   mysql -h "${api_db_host}" -u root -p${api_db_root_password} -e ";" &>/dev/null
@@ -524,13 +504,17 @@ function checkMariadbConnexion() {
 # If we cannot connect, display a warning.
 # Globals:
 #   error
+#   api_db_user_password
+#   api_db_username
+#   api_db_limit_to_ip
+#   api_db_host
 # Arguments:
 #   None
 #######################################
 function checkApiUserGrants() {
 
   logInfo "Check API user grants..." true
-  mysql -h "${api_db_host}" -u rootdb_api_user -p${api_db_user_password} -e "SHOW GRANTS FOR rootdb_api_user@'${api_db_limit_to_ip}';" &>/tmp/grants
+  mysql -h "${api_db_host}" -u ${api_db_username} -p${api_db_user_password} -e "SHOW GRANTS FOR '${api_db_username}'@'${api_db_limit_to_ip}';" &>/tmp/grants
   if [[ $? == 1 ]]; then
 
     logInfoAddFail
@@ -559,7 +543,7 @@ function checkApiUserGrants() {
   rm -f /tmp/grants
   if [[ ${error} == true ]]; then
 
-    logError "There was an issue fetching rootdb_api_user@${api_db_limit_to_ip} grants."
+    logError "There was an issue fetching ${api_db_username}@${api_db_limit_to_ip} grants."
   else
     logInfoAddOK
   fi
@@ -569,6 +553,8 @@ function checkApiUserGrants() {
 # Check if Memcached is working correctly. If not, display a warning.
 # Globals:
 #   error
+#   api_memcached_port
+#   api_memcached_host
 # Arguments:
 #   None
 #######################################
@@ -586,49 +572,18 @@ function checkMemcached() {
   fi
 }
 
-#######################################
-# Check if SSL certificat and private key are available.
-# Globals:
-#   error
-# Arguments:
-#   None
-#######################################
-function checkCertAndPK() {
-
-  logInfo "Check if ${websockets_ssl_local_cert} exists..." true
-  if [[ ! -f "${websockets_ssl_local_cert}" ]]; then
-    error=true
-    logInfoAddFail
-    logError "File ${websockets_ssl_local_cert} does not exist."
-  else
-    logInfoAddOK
-  fi
-
-  logInfo "Check if ${websockets_ssl_local_pk} exists..." true
-  if [[ ! -f "${websockets_ssl_local_pk}" ]]; then
-    error=true
-    logInfoAddFail
-    logError "File ${websockets_ssl_local_pk} does not exist."
-  else
-    logInfoAddOK
-  fi
-
-  if [[ ${error} == true ]]; then
-    logInfo "There are errors, stopping here."
-    exit 1
-  fi
-}
-
 #
 #
 # RooDB installation and boostrap
 #
 #
+
 #######################################
 # Check if SSL certificate and private key are available.
 # Stop the script if there's an issue while fetching the version online.
 # Globals:
 #   rdb_latest_version_available
+#   rdb_online_latest_version_url
 # Arguments:
 #   None
 #######################################
@@ -651,6 +606,7 @@ function fetchLatestRootDBVersion() {
 # Check RootDB version from API directory, if already installed installed.
 # Globals:
 #   rdb_current_version
+#   rdb_init_file
 # Arguments:
 #   None
 #######################################
@@ -675,6 +631,7 @@ function getCurrentRootDBVersion() {
 #   rdb_asked_version
 #   rdb_current_version
 #   rdb_asked_version
+#   rdb_init_file
 # Arguments:
 #   None
 #######################################
@@ -737,6 +694,8 @@ function extractRootDBArchive() {
 # Stop the script if there's an issue while fetching the archive online..
 # Globals:
 #   archive_file
+#   rdb_archives_dir
+#   log_file
 # Arguments:
 #   rootdb_version
 #######################################
@@ -761,138 +720,6 @@ function downloadAndExtractRootDB() {
 
   logInfo "Deleting downloaded archive..."
   rm -f "${rdb_archive_file}"
-}
-
-#######################################
-# Configure API env file, when we install for the first time RootDB.
-# Globals:
-#   api_init_file
-#   root_api_env_file
-#   rdb_version_dir
-#   api_db_host
-#   api_db_port
-#   api_db_user_password
-#   api_db_host
-#   api_memcached_host
-#   api_memcached_port
-#   api_host
-#   scheme
-#   session_domain
-#   pusher_app_key
-#  websockets_ssl_local_cert
-#   websockets_ssl_local_pk
-#   websockets_ssl_passphrase
-# Arguments:
-#   None
-#######################################
-function configureAPIEnv() {
-
-  if [[ ! -f "${api_init_file}" ]]; then
-    logInfo "Configuring API env file..." true
-
-    [[ -f "${root_api_env_file}" ]] && rm -f "${root_api_env_file}"
-    cp "${rdb_version_dir}/api/.env" "${root_api_env_file}"
-
-    declare -A env_var_to_api_vars=()
-    env_var_to_api_vars[DB_HOST]="${api_db_host}"
-    env_var_to_api_vars[DB_PORT]="${api_db_port}"
-    env_var_to_api_vars[DB_PASSWORD]="${api_db_user_password}"
-    env_var_to_api_vars[DB_HOST]="${api_db_host}"
-    env_var_to_api_vars[MEMCACHED_HOST]="${api_memcached_host}"
-    env_var_to_api_vars[MEMCACHED_PORT]="${api_memcached_port}"
-    env_var_to_api_vars[APP_URL]="${scheme}://${api_host}"
-    env_var_to_api_vars[SESSION_DOMAIN]="${session_domain}"
-    env_var_to_api_vars[SANCTUM_STATEFUL_DOMAINS]="${session_domain}"
-    env_var_to_api_vars[PUSHER_APP_KEY]="${pusher_app_key}"
-    env_var_to_api_vars[PUSHER_APP_SCHEME]="${scheme}"
-    env_var_to_api_vars[PUSHER_APP_HOST]="${api_host}"
-    env_var_to_api_vars[PUSHER_APP_ALLOWED_ORIGINS]="${api_host},${front_host},${session_domain}"
-    env_var_to_api_vars[LARAVEL_WEBSOCKETS_SSL_LOCAL_CERT]=""
-    env_var_to_api_vars[LARAVEL_WEBSOCKETS_SSL_LOCAL_PK]=""
-    env_var_to_api_vars[LARAVEL_WEBSOCKETS_SSL_PASSPHRASE]=""
-
-    if [[ "${scheme}" == "https" ]]; then
-      env_var_to_api_vars[PUSHER_APP_USE_TLS]="true"
-      env_var_to_api_vars[LARAVEL_WEBSOCKETS_SSL_LOCAL_CERT]="${websockets_ssl_local_cert}"
-      env_var_to_api_vars[LARAVEL_WEBSOCKETS_SSL_LOCAL_PK]="${websockets_ssl_local_pk}"
-      env_var_to_api_vars[LARAVEL_WEBSOCKETS_SSL_PASSPHRASE]="${websockets_ssl_passphrase}"
-    fi
-
-    declare env_var_idx
-    for env_var_idx in "${!env_var_to_api_vars[@]}"; do
-
-      declare var_name="${env_var_idx}"
-      declare var_value="${env_var_to_api_vars[$env_var_idx]}"
-
-      if [[ ! -z "${var_value}" ]]; then
-
-        sed -i "s|${var_name}=\(.*\)|${var_name}=${var_value}|g" "${root_api_env_file}"
-      fi
-    done
-
-    logInfoAddOK
-    touch "${api_init_file}"
-
-  else
-    logInfo "API env file is already configured."
-  fi
-}
-
-#######################################
-# Configure frontend env file, when we install for the first time RootDB.
-# Globals:
-#   front_init_file
-#   root_front_app_config_js_file
-#   rdb_version_dir
-#   scheme
-#   api_host
-#   pusher_app_key
-#   root_api_env_file
-#   websockets_port
-#   api_host
-# Arguments:
-#   None
-#######################################
-function configureFrontendEnv() {
-
-  if [[ ! -f "${front_init_file}" ]]; then
-    logInfo "Configuring frontend env file..." true
-
-    [[ -f "${root_front_app_config_js_file}" ]] && rm -f "${root_front_app_config_js_file}"
-    cp "${rdb_version_dir}/frontend/app-config.js" "${root_front_app_config_js_file}"
-
-    declare -A env_var_to_front_vars=()
-    env_var_to_front_vars[REACT_APP_API_URL]="${scheme}://${api_host}"
-    env_var_to_front_vars[REACT_APP_ECHO_CLIENT_KEY]="${pusher_app_key}"
-    env_var_to_front_vars[REACT_APP_ECHO_CLIENT_CLUSTER]="$(grep "^PUSHER_APP_CLUSTER" "${root_api_env_file}" | sed "s/PUSHER_APP_CLUSTER=//")"
-    env_var_to_front_vars[REACT_APP_ECHO_CLIENT_WS_HOST]="${api_host}"
-    env_var_to_front_vars[REACT_APP_ECHO_CLIENT_WS_PORT]="${websockets_port}"
-    env_var_to_front_vars[REACT_APP_ECHO_CLIENT_WSS_HOST]="${api_host}"
-    env_var_to_front_vars[REACT_APP_ECHO_CLIENT_WSS_PORT]="${websockets_port}"
-    if [[ "${scheme}" == "https" ]]; then
-      env_var_to_front_vars[REACT_APP_ECHO_CLIENT_FORCE_TLS]="true"
-    fi
-
-    declare env_var_idx
-    for env_var_idx in "${!env_var_to_front_vars[@]}"; do
-
-      declare var_name="${env_var_idx}"
-      declare var_value="${env_var_to_front_vars[$env_var_idx]}"
-
-      if [[ ! -z "${var_value}" ]]; then
-
-        sed -i "s|\(.*${var_name}.*\)|'${var_name}': '${var_value}',|g" "${root_front_app_config_js_file}"
-      fi
-    done
-
-    sed -i "s|\(.*REACT_APP_ECHO_CLIENT_AUTHENDPOINT.*\)|'REACT_APP_ECHO_CLIENT_AUTHENDPOINT'\: '${scheme}://${api_host}\/broadcasting\/auth',|g" "${root_front_app_config_js_file}"
-
-    logInfoAddOK
-    touch "${front_init_file}"
-
-  else
-    logInfo "Frontend env file is already configured."
-  fi
 }
 
 #######################################
@@ -1013,9 +840,6 @@ function symlinkDirAndEnvFiles() {
 #   nginx_user
 #   nginx_group
 #   data_dir
-#   scheme
-#   websockets_ssl_local_cert
-#   websockets_ssl_local_pk
 # Arguments:
 #   None
 #######################################
@@ -1024,12 +848,6 @@ function setupFilesPermissions() {
   logInfo "Setup permissions..." true
 
   chown -R ${nginx_user}:${nginx_group} "${data_dir}"
-  if [[ "${scheme}" == "https" ]]; then
-    chown ${nginx_user}:${nginx_group} "${websockets_ssl_local_cert}"
-    chmod 644 "${websockets_ssl_local_cert}"
-    chown ${nginx_user}:${nginx_group} "${websockets_ssl_local_pk}"
-    chmod 600 "${websockets_ssl_local_pk}"
-  fi
 
   logInfoAddOK
 }
@@ -1059,6 +877,30 @@ function runSQLMigration() {
   fi
 }
 
+#######################################
+# Simply display some useful commands.
+# Globals:
+#   data_dir
+#   rdb_archives_dir
+# Arguments:
+#   None
+#######################################
+function listInstallDir() {
+
+  echo
+  logInfo "Install directory:"
+  ls -lha "${data_dir}"
+  echo
+  logInfo "Archive directory:"
+  ls -lha "${rdb_archives_dir}"
+}
+
+#######################################
+# Simply display some useful commands.
+# Globals:
+# Arguments:
+#   None
+#######################################
 function displayServicesToRestart() {
 
   echo
@@ -1081,8 +923,6 @@ function installRootDB() {
 
   downloadAndExtractRootDB "${rdb_asked_version}"
 
-  configureAPIEnv
-  configureFrontendEnv
   bootstrapDatabase
   symlinkDirAndEnvFiles
   setupFilesPermissions
@@ -1095,7 +935,7 @@ function installRootDB() {
 
 #######################################
 # List all RootDB version currently installed, display a choice list, and ask user to which version
-# he want to rollback.
+# he wants to rollback.
 # Globals:
 #  rdb_archives_dir
 #  rdb_asked_version
@@ -1212,17 +1052,16 @@ function help() {
   echo -e "\t-i            - ignore software dependencies checks."
   echo -e "\t-v <version>  - set version of RootDB to download. ( x.y.z )"
   echo
-  echo -e "\t-e <env>      - env file (default: ${env_file})"
-  echo -e "\t                get a default env file here : https://documentation.rootdb.fr/install/install_without_docker.html#how-to-get-the-code"
+  echo -e "\t-d <data_dir> - RootDB main directory file ( default: ${data_dir} )"
   echo
   echo -e "\t-h            - display this help and quit."
   echo
   exit 0
 }
 
-while getopts e:iv:h option; do
+while getopts d:iv:h option; do
   case "${option}" in
-  e) env_file=${OPTARG} ;;
+  d) data_dir=${OPTARG} ;;
   i) ignore_software_dependencies=true ;;
   v) rdb_asked_version=${OPTARG} ;;
   h) help ;;
@@ -1233,7 +1072,6 @@ done
 #######################################
 # Everything start here.
 # Globals:
-#   scheme
 #   api_env_file
 #   error
 #   rdb_asked_version
@@ -1249,11 +1087,10 @@ function main() {
 
   welcome
   isRootUser
-  warningEnvFile
-  checkEnvFile
+  warningEnvFiles
+  checkEnvFiles
   setEnvVariables
   checkDependencies
-
   checkInstallDirectory
   checkDirectoriesPermissions
 
@@ -1264,12 +1101,7 @@ function main() {
   fi
 
   checkApiUserGrants
-
   checkMemcached
-
-  if [[ ${scheme} == "https" ]]; then
-    checkCertAndPK
-  fi
 
   if [[ ${error} == true ]]; then
     logInfo "There are errors, stopping here."
@@ -1310,6 +1142,7 @@ function main() {
     updateRootDB
   fi
 
+  listInstallDir
   displayServicesToRestart
   echo
   logInfo "Done."

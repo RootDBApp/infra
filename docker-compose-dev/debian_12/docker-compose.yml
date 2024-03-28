@@ -1,0 +1,49 @@
+services:
+  dev-rootdb-debian-12:
+    build:
+      args:
+        user: $user
+        user_id: 1000
+      context: ../../docker-dev/
+      dockerfile: Dockerfile_debian_12
+    image: dev-rootdb-debian-12
+    container_name: dev-rootdb-debian-12
+    tty: true
+    restart: unless-stopped
+    working_dir: /home/rootdb_install
+    volumes:
+      - ../../bash:/home/rootdb_install
+    networks:
+      dev_rootdb_debian_12_network:
+        ipv4_address: 172.30.0.31
+  #    ports:
+  #      - "22:22"
+
+  dev-rootdb-db-api:
+    image: mariadb:latest
+    container_name: dev-rootdb-db-api
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: rootdb-api
+      MYSQL_ROOT_PASSWORD: thee1uuWiechieneiyieZ0aif3aefe
+      MYSQL_PASSWORD: yaesheekoh5efeen2Que0gu2uupich
+      MYSQL_USER: rootdb_api_user
+      SERVICE_TAGS: prod
+      SERVICE_NAME: mariadb
+    volumes:
+      - dev_rootdb_db_api_var_lib_mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      dev_rootdb_debian_12_network:
+        ipv4_address: 172.30.0.32
+
+volumes:
+  dev_rootdb_db_api_var_lib_mysql:
+
+networks:
+  dev_rootdb_debian_12_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
