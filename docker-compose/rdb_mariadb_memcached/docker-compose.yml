@@ -20,11 +20,13 @@ services:
       NGINX_USE_SSL: "${NGINX_USE_SSL:-0}"
       NGINX_API_PORT: "${NGINX_API_PORT:-80}"
       NGINX_API_HOST: "${NGINX_API_HOST:-localhost}"
+      NGINX_WS_API_PORT: "${NGINX_WS_API_PORT:-80}"
+      NGINX_WS_API_HOST: "${NGINX_WS_API_HOST:-localhost}"
       NGINX_FRONTEND_PORT: "${NGINX_FRONTEND_PORT:-80}"
       NGINX_FRONTEND_HOST: "${NGINX_FRONTEND_HOST:-localhost}"
     ports:
-      - 6001:6001
       - "${NGINX_API_PORT:-80}:${NGINX_API_PORT:-80}"
+      - "${NGINX_WS_API_PORT:-80}:${NGINX_WS_API_PORT:-80}"
       - "${NGINX_FRONTEND_PORT:-80}:${NGINX_FRONTEND_PORT:-80}"
     networks:
       rootdb-network:

@@ -27,8 +27,8 @@ services:
       dev-rootdb-network:
         ipv4_address: 172.20.0.30
     ports:
-      - "8080:8080"
-      - "9000:9000"
+      - "8080:8080" # ws
+      - "9000:9000" # php-fpm
     depends_on:
       - dev-rootdb-db-api
 

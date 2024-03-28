@@ -2,7 +2,6 @@
 API_ENV_PATHNAME=./api_env
 FRONTEND_APP_CONFIG_PATHNAME=./app-config.js
 
-LARAVEL_WEBSOCKETS_PORT=6001
 TIMEZONE=Europe/Paris
 
 # Docker UID/GID of the user which start containers.
@@ -10,11 +9,12 @@ UID=1000
 GID=1000
 
 # Nginx without TLS
-NGINX_USE_SSL=0
 NGINX_API_PORT=8090
 NGINX_API_HOST=localhost
-NGINX_FRONTEND_PORT=8080
+NGINX_FRONTEND_PORT=8091
 NGINX_FRONTEND_HOST=localhost
+NGINX_WS_API_PORT=8081
+NGINX_WS_API_HOST=localhost
 
 # Memcached service
 MEMCACHED_HOST=rootdb-memcached
