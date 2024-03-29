@@ -1,27 +1,19 @@
 server {
     listen 443 ssl;
-    server_name <frontend.hostname.tld>;
+    server_name frontend.hostname.tld;
     root        /path/to/frontend/;
     index       index.html;
 
-    ssl_certificate     /etc/letsencrypt/live/<hostname.tld>/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/<hostname.tld>/privkey.pem;
-    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
-    ssl_session_cache shared:le_nginx_SSL:10m;
-    ssl_session_timeout 1440m;
-    ssl_session_tickets off;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers off;
-    ssl_ciphers "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA";
+    include /etc/nginx/options-ssl-nginx.conf;
 
-    access_log /var/log/nginx/<frontend.hostname.tld>.access.log;
-    error_log  /var/log/nginx/<frontend.hostname.tld>.error.log;
+    access_log /var/log/nginx/frontend.hostname.tld.access.log;
+    error_log  /var/log/nginx/frontend.hostname.tld.error.log;
 
     large_client_header_buffers 4 32k;
 
     location ~ ^.*fonts\/(.*)$ {
         add_header          Access-Control-Allow-Origin *;
-        proxy_pass          http://<api.hostname.tld>/api/theme/fonts/$1;
+        proxy_pass          http://api.hostname.tld/api/theme/fonts/$1;
         proxy_http_version  1.1;
         proxy_set_header    X-Real-IP           $remote_addr;
         proxy_set_header    X-Forwarded-For     $proxy_add_x_forwarded_for;
@@ -44,6 +36,6 @@ server {
 
 server {
     listen 80;
-    server_name <frontend.hostname.tld>;
+    server_name frontend.hostname.tld;
     return 301 https://$host$request_uri;
 }

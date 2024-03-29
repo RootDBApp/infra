@@ -1,0 +1,32 @@
+server {
+    listen 443 ssl;
+    server_name api.hostname.tld;
+    root        /path/to/api/public/;
+    index       index.php;
+
+    include /etc/nginx/options-ssl-nginx.conf;
+
+    access_log /var/log/nginx/api.hostname.tld.access.log;
+    error_log /var/log/nginx/api.hostname.tld.error.log;
+
+    large_client_header_buffers 4 32k;
+
+    location / {
+         proxy_http_version 1.1;
+         proxy_set_header Host $http_host;
+         proxy_set_header Scheme $scheme;
+         proxy_set_header SERVER_PORT $server_port;
+         proxy_set_header REMOTE_ADDR $remote_addr;
+         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+         proxy_set_header Upgrade $http_upgrade;
+         proxy_set_header Connection "Upgrade";
+
+         proxy_pass http://0.0.0.0:8080;
+     }
+}
+
+server {
+    listen 80;
+    server_name api.hostname.tld;
+    return 301 https://$host$request_uri;
+}
