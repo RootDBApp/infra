@@ -351,8 +351,8 @@ function setEnvVariables() {
   logInfo "Summary :"
   logInfo
   logInfo "data dir                  : ${data_dir}"
-  logInfo "api_memcached_host        : ${api_memcached_host}"
-  logInfo "api_memcached_port        : ${api_memcached_port}"
+  logInfo "api memcached host        : ${api_memcached_host}"
+  logInfo "api memcached port        : ${api_memcached_port}"
   logInfo "api db host               : ${api_db_host}"
   logInfo "api db port               : ${api_db_port}"
   logInfo "api db user password      : ****"
