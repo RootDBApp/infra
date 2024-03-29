@@ -1,0 +1,41 @@
+FROM bitnami/minideb:latest
+
+ENV TIMEZONE=Europe/Paris
+
+RUN install_packages ca-certificates curl apt-transport-https software-properties-common wget  lsb-release \
+    && curl -o /usr/local/bin/semver "https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver" \
+    && chmod +x /usr/local/bin/semver \
+    && curl -sSL https://packages.sury.org/php/README.txt | bash -x \
+    && install_packages \
+    memcached \
+    bzip2 \
+    gawk \
+    iputils-ping \
+    iproute2 \
+    jq \
+    mariadb-client \
+    nmap \
+    procps \
+    php8.2 \
+    php8.2-curl \
+    php8.2-dom \
+    php8.2-fpm \
+    php8.2-iconv \
+    php8.2-mbstring \
+    php8.2-memcached \
+    php8.2-mysql \
+    php8.2-pgsql \
+    postgresql-client-common \
+    supervisor \
+    unzip
+
+
+COPY supervisor/supervisord.conf /etc/
+COPY supervisor/supervisor.d /etc/supervisor.d/
+COPY php-fpm/8.2/fpm/pool.d/www.conf /etc/php/8.2/fpm/pool.d/www.conf
+COPY php-fpm/8.2/fpm/php.ini /etc/php/8.2/fpm/php.ini
+COPY php-fpm/8.2/fpm/php-fpm.conf /etc/php/8.2/fpm/php-fpm.conf
+COPY php-fpm/8.2/cli/php.ini /etc/php/8.2/cli/php.ini
+
+# Expose port 9000 and start php-fpm server.
+EXPOSE 9000
