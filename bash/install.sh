@@ -226,6 +226,7 @@ function welcome() {
   echo -e "* memcached"
   echo -e "* php-fpm    : https://documentation.rootdb.fr/install/install_without_docker.html#php-fpm"
   echo -e "* mariadb    : https://documentation.rootdb.fr/install/install_without_docker.html#mariadb"
+  echo -e "               You should have a specific rootdb api user already setup: https://documentation.rootdb.fr/install/install_without_docker.html#mariadb"
   echo -e "* supervisor : https://documentation.rootdb.fr/install/install_without_docker.html#supervisor"
   echo
   echo
@@ -744,6 +745,7 @@ function bootstrapDatabase() {
   if [[ "${env_ok}" == "y" ]]; then
 
     logInfo "Database initialization..." true
+    mysql -h "${api_db_host}" -u root -p"${api_db_root_password}" -e "DROP TABLE IF EXISTS telescope_entries_tags; DROP TABLE IF EXISTS telescope_entries;" "rootdb-api"  &>"${log_file}"
     mysql -h "${api_db_host}" -u root -p"${api_db_root_password}" "rootdb-api" <"${rdb_version_dir}/api/storage/app/seeders/production/seeder_init.sql" &>"${log_file}"
     if [[ $? != 0 ]]; then
 
@@ -1052,14 +1054,14 @@ function help() {
   echo -e "\t-i            - ignore software dependencies checks."
   echo -e "\t-v <version>  - set version of RootDB to download. ( x.y.z )"
   echo
-  echo -e "\t-d <data_dir> - RootDB main directory file ( default: ${data_dir} )"
+  echo -e "\t-d <data_dir> - RootDB main directory file ( ${data_dir} )"
   echo
   echo -e "\t-h            - display this help and quit."
   echo
   exit 0
 }
 
-while getopts d:iv:h option; do
+while getopts d:e:iv:h option; do
   case "${option}" in
   d) data_dir=${OPTARG} ;;
   i) ignore_software_dependencies=true ;;

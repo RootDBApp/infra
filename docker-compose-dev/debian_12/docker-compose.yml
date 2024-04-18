@@ -13,6 +13,13 @@ services:
     working_dir: /home/rootdb_install
     volumes:
       - ../../bash:/home/rootdb_install
+      # Override default API & Frontend environment files
+      #- /path/to/api_env:/home/rootdb_install/api_env
+      #- /path/to/app-config.js:/home/rootdb_install/app-config.js
+      # Directory containing all TLS certificats
+      #- /path/to/letsencrypt:/etc/letsencrypt
+      # Directory containing your nginx configuration files
+      #- /path/to/nginx-sites-enabled:/etc/nginx/sites-enabled
     networks:
       dev_rootdb_debian_12_network:
         ipv4_address: 172.30.0.31
