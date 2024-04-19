@@ -128,11 +128,28 @@ services:
   #    dev-rootdb-network:
   #      ipv4_address: 172.20.0.70
 
+#  dev-rootdb-mssql:
+#    image: mcr.microsoft.com/mssql/server:latest
+#    container_name: dev-rootdb-mssql
+#    restart: unless-stopped
+#    environment:
+#      ACCEPT_EULA: Y
+#      MSSQL_SA_PASSWORD: thee1uuWiechieneiyieZ0aif3aefe
+#      MSSQL_PID: Developer
+#    volumes:
+#      - ./mssql-sakila:/mssql-sakila
+#      - dev_rootdb_db_var_lib_mssql:/var/lib/mssql
+#    networks:
+#      dev-rootdb-network:
+#        ipv4_address: 172.20.0.80
+
+
 volumes:
   dev_rootdb_var_www:
   dev_rootdb_db_api_var_lib_mysql:
   dev_rootdb_db_sakila_var_lib_mysql:
   dev_rootdb_db_var_lib_postgresql:
+  dev_rootdb_db_var_lib_mssql:
 
 networks:
   dev-rootdb-network:
