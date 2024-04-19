@@ -15,7 +15,6 @@ services:
     environment:
       UID: ${UID:-1000}
       GID: ${GID:-1000}
-      LARAVEL_WEBSOCKETS_PORT: "${LARAVEL_WEBSOCKETS_PORT:-6001}"
       TIMEZONE: "${TIMEZONE:-Europe/Paris}"
       NGINX_USE_SSL: "${NGINX_USE_SSL:-0}"
       NGINX_API_PORT: "${NGINX_API_PORT:-80}"
