@@ -1,0 +1,169 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: "rootdb"
+  name: rootdb-config
+data:
+  API_ENV: |
+    APP_NAME="RootDB API"
+    APP_ENV=production
+    APP_KEY=base64:eLjtonpxupJGlgJVQ5p6dhgGTXxDxvzfn70oY4KXppM=
+    APP_DEBUG=true
+    APP_URL=http://localhost:8090
+    
+    LOG_CHANNEL=stack
+    
+    DB_CONNECTION=mysql
+    # host = pod name
+    # MariaDB service
+    DB_HOST=rootdb-pod
+    DB_PORT=3306
+    DB_DATABASE=rootdb-api
+    DB_USERNAME=rootdb_api_user
+    DB_PASSWORD=uo2Coxiek4chaib5apooqu6yei8ip1
+    
+    SESSION_DRIVER=cookie
+    SESSION_LIFETIME=120
+    
+    BROADCAST_CONNECTION=reverb
+    
+    CACHE_DRIVER=memcached
+    QUEUE_CONNECTION=sync
+    QUEUE_QUERY_CONNECTIONS=10
+    
+    MEMCACHED_PERSISTENT_ID=rootdb-pod
+    # host = service name from docker-compose.yml
+    MEMCACHED_HOST=rootdb-pod
+    MEMCACHED_PORT=11211
+    MEMCACHED_USERNAME=
+    MEMCACHED_PASSWORD=
+    
+    REVERB_APP_ID=rootdb-api-app-id
+    REVERB_APP_KEY=jetuePoh5uyeeth8oom1Aeg8Lae7guchie2ieba3ahyai
+    REVERB_APP_SECRET=aexia8GuethohZojiegheachiegi1EeTaikoo1da0Oar8
+    REVERB_MAX_REQUEST_SIZE=10000000
+    REVERB_SERVER_HOST=0.0.0.0
+    REVERB_SERVER_PORT=8080
+    
+    REVERB_HOST=localhost
+    REVERB_PORT=8080
+    REVERB_SCHEME=http
+    
+    VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+    VITE_REVERB_HOST="${REVERB_HOST}"
+    VITE_REVERB_PORT="${REVERB_PORT}"
+    VITE_REVERB_SCHEME="${REVERB_SCHEME}"
+  APP_CONFIG_JS: |
+    window.appConfig = {
+        'REACT_APP_API_URL': 'http://localhost:8090',
+        'REACT_APP_VITE_REVERB_APP_KEY': 'jetuePoh5uyeeth8oom1Aeg8Lae7guchie2ieba3ahyai',
+        'REACT_APP_VITE_REVERB_HOST': 'localhost',
+        'REACT_APP_VITE_REVERB_PORT': '8081',
+        'REACT_APP_VITE_REVERB_SCHEME': 'http',
+    };
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: "rootdb"
+  name: "rootdb-pod"
+spec:
+  containers:
+    - name: rootdb-app
+      image: docker.io/rootdbapp/rootdb:latest
+      env:
+        - name: UID
+          value: 1000
+        - name: GID
+          value: 1000
+        - name: TIMEZONE
+          value: "Europe/Paris"
+        - name: NGINX_API_PORT
+          value: "8090"
+        - name: NGINX_API_HOST
+          value: "localhost"
+        - name: NGINX_WS_API_PORT
+          value: "8081"
+        - name: NGINX_WS_API_HOST
+          value: "localhost"
+        - name: NGINX_FRONTEND_PORT
+          value: "8091"
+        - name: NGINX_FRONTEND_HOST
+          value: "localhost"
+        - name: FRONTEND_APP_CONFIG_PATHNAME
+          value: ./app-config.js
+        - name: MEMCACHED_HOST
+          value: rootdb-pod
+        - name: DB_PORT
+          value: 3306
+        - name: DB_HOST
+          value: rootdb-pod
+        - name: MEMCACHED_PORT
+          value: 11211
+        - name: API_ENV_PATHNAME
+          value: ./api_env
+        - name: DB_USER_PASSWORD
+          value: uo2Coxiek4chaib5apooqu6yei8ip1
+      ports:
+        - containerPort: 8090
+          hostPort: 8090
+        - containerPort: 8081
+          hostPort: 8081
+        - containerPort: 8091
+          hostPort: 8091
+      volumeMounts:
+        - name: rootdb-config-volume
+          mountPath: /var/www/api/.env
+          subPath: .env
+        - name: rootdb-config-volume
+          mountPath: /var/www/api/.env.build
+          subPath: .env
+        - name: rootdb-config-volume
+          mountPath: /var/www/frontend/app-config.js
+          subPath: app-config.js
+      securityContext:
+        runAsNonRoot: true
+    - name: rootdb-memcached
+      image: docker.io/rootdbapp/rootdb-memcached:latest
+      ports:
+        - containerPort: 11211
+          hostPort: 11211
+      securityContext:
+        runAsNonRoot: true
+    - name: rootdb-db
+      image: docker.io/mariadb:latest
+      env:
+        - name: MYSQL_TCP_PORT
+          value: 3306
+        - name: MYSQL_UNIX_PORT
+          value: 3306
+        - name: MYSQL_DATABASE
+          value: rootdb-api
+        - name: MYSQL_ROOT_PASSWORD
+          value: oLoo4cee5aaYon4po6ojoophie2aiY
+        - name: MYSQL_PASSWORD
+          value: uo2Coxiek4chaib5apooqu6yei8ip1
+        - name: MYSQL_USER
+          value: rootdb_api_user
+      ports:
+        - containerPort: 3306
+          hostPort: 3306
+      securityContext:
+        runAsNonRoot: true
+  volumes:
+    - name: rootdb-config-volume
+      configMap:
+        name: rootdb-config
+        items:
+          - key: API_ENV
+            path: .env
+          - key: APP_CONFIG_JS
+            path: app-config.js
+  hostAliases:
+    - ip: "127.0.0.1"
+      hostnames:
+        - "rootdb"
+
