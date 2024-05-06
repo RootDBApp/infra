@@ -25,6 +25,7 @@ RUN install_packages ca-certificates curl apt-transport-https software-propertie
     php8.2-memcached \
     php8.2-mysql \
     php8.2-pgsql \
+    postgresql-client \
     postgresql-client-common \
     supervisor \
     unzip
