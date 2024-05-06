@@ -111,22 +111,23 @@ services:
       dev-rootdb-network:
         ipv4_address: 172.20.0.51
 
-  #dev-rootdb-postgresql:
-  #  image: postgres:latest
-  #  container_name: dev-rootdb-postgresql
-  #  restart: unless-stopped
-  #  environment:
-  #    POSTGRES_PASSWORD: thee1uuWiechieneiyieZ0aif3aefe
-  #    POSTGRES_USER: localuser
-  #    POSTGRES_DB: dvdrental
-  #    PGDATA: /var/lib/postgre_sql
-  #    SERVICE_TAGS: dev
-  #    SERVICE_NAME: postgresql
-  #  volumes:
-  #    - dev_rootdb_db_var_lib_postgresql:/var/lib/postgre_sql
-  #  networks:
-  #    dev-rootdb-network:
-  #      ipv4_address: 172.20.0.70
+#  dev-rootdb-postgresql:
+#    image: postgres:latest
+#    container_name: dev-rootdb-postgresql
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_PASSWORD: thee1uuWiechieneiyieZ0aif3aefe
+#      POSTGRES_USER: postgres
+#      POSTGRES_DB: dvdrental
+#      PGDATA: /var/lib/postgre_sql
+#      SERVICE_TAGS: dev
+#      SERVICE_NAME: postgresql
+#    volumes:
+#      - ./postgres-sakila:/postgres-sakila
+#      - dev_rootdb_db_var_lib_postgresql:/var/lib/postgre_sql
+#    networks:
+#      dev-rootdb-network:
+#        ipv4_address: 172.20.0.70
 
 #  dev-rootdb-mssql:
 #    image: mcr.microsoft.com/mssql/server:latest
