@@ -13,7 +13,7 @@ docker build --compress --force-rm --no-cache -t rootdb-nginx-php-fpm-supervisor
 
 
 # Manual release of a new version of RootDB 
-docker build --compress --force-rm --no-cache --build-arg VERSION="dev" --build-arg UID=1000 --build-arg GID=1000 -t "rootdb:dev" -f ./Dockerfile_rootdb .
+docker build --compress --force-rm --no-cache --build-arg VERSION="1.1.1" --build-arg UID=1000 --build-arg GID=1000 -t "rootdb:1.1.1" -f ./Dockerfile_rootdb .
 ```
 
 # Push images on dockerhub
@@ -30,9 +30,9 @@ docker push rootdbapp/rootdb-nginx-php-fpm-supervisor:8.2.18
 docker push rootdbapp/rootdb-nginx-php-fpm-supervisor:latest
 
 # Manual release of a new version of RootDB 
-docker tag rootdb:dev rootdbapp/rootdb:dev
-docker tag rootdb:dev rootdbapp/rootdb:latest
-docker push rootdbapp/rootdb:dev
+docker tag rootdb:1.1.1 rootdbapp/rootdb:1.1.1
+docker tag rootdb:1.1.1 rootdbapp/rootdb:latest
+docker push rootdbapp/rootdb:1.1.1
 docker push rootdbapp/rootdb:latest
 
 ```
