@@ -19,10 +19,10 @@ services:
       - ../../../frontend/public:/var/www/archives/dev-git/frontend
       - ../../../frontend/node_modules/primereact/resources/themes/:/var/www/archives/dev-git/api/frontend-themes
       - ../../../api/docker-entrypoint-dev.sh:/usr/local/bin/docker-entrypoint-dev.sh
-      - ./php/8.2/fpm/pool.d/www.conf:/etc/php/8.2/fpm/pool.d/www.conf
-      - ./php/8.2/fpm/php.ini:/etc/php/fpm/8.2/php.ini
-      - ./php/8.2/fpm/php-fpm.conf:/etc/php/8.2/fpm/php-fpm.conf
-      - ./php/8.2/cli/php.ini:/etc/php/cli/8.2/php.ini
+      - ./php/8.3/fpm/pool.d/www.conf:/etc/php/8.3/fpm/pool.d/www.conf
+      - ./php/8.3/fpm/php.ini:/etc/php/fpm/8.3/php.ini
+      - ./php/8.3/fpm/php-fpm.conf:/etc/php/8.3/fpm/php-fpm.conf
+      - ./php/8.3/cli/php.ini:/etc/php/cli/8.3/php.ini
     networks:
       dev-rootdb-network:
         ipv4_address: 172.20.0.30
