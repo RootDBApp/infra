@@ -1,0 +1,54 @@
+FROM bitnami/minideb:latest
+
+LABEL \
+	org.opencontainers.image.authors="PORQUET Sébastien <sebastien.porquet@ijaz.fr>" \
+	org.opencontainers.image.description="An open source self-hosted reporting application" \
+	org.opencontainers.image.documentation="https://documentation.rootdb.fr/" \
+	org.opencontainers.image.licenses="GNU AFFERO GENERAL PUBLIC LICENSE Version 3" \
+	org.opencontainers.image.source="https://github.com/RootDBApp/infra/blob/main/docker/Dockerfile_nginx_php_fpm_8_3" \
+	org.opencontainers.image.title="Base image for RootDB" \
+	org.opencontainers.image.url="https://www.rootdb.fr/" \
+	org.opencontainers.image.vendor="RootDB" \
+	org.opencontainers.image.version="$VERSION"
+
+RUN install_packages ca-certificates curl apt-transport-https software-properties-common wget  lsb-release \
+    && curl -o /usr/local/bin/semver "https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver" \
+    && mkdir -p /etc/nginx/conf.d.tpl \
+    && chmod +x /usr/local/bin/semver \
+    && curl -sSL https://packages.sury.org/php/README.txt | bash -x \
+    && install_packages \
+    memcached \
+    bzip2 \
+    gawk \
+    iputils-ping \
+    iproute2 \
+    jq \
+    mariadb-client \
+    nmap \
+    nginx \
+    procps \
+    php8.3 \
+    php8.3-curl \
+    php8.3-dom \
+    php8.3-fpm \
+    php8.3-iconv \
+    php8.3-mbstring \
+    php8.3-memcached \
+    php8.3-mysql \
+    php8.3-pgsql \
+    postgresql-client \
+    postgresql-client-common \
+    supervisor \
+    unzip
+
+
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/conf.d.tpl /etc/nginx/conf.d.tpl
+
+COPY supervisor/supervisord.conf /etc/
+COPY supervisor/supervisor.d /etc/supervisor.d/
+
+COPY php-fpm/8.3/fpm/pool.d/www.conf /etc/php/8.3/fpm/pool.d/www.conf
+COPY php-fpm/8.3/fpm/php.ini /etc/php/8.3/fpm/php.ini
+COPY php-fpm/8.3/fpm/php-fpm.conf /etc/php/8.3/fpm/php-fpm.conf
+COPY php-fpm/8.3/cli/php.ini /etc/php/8.3/cli/php.ini
